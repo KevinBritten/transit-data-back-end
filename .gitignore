@@ -71,3 +71,5 @@ jspm_packages/
 # Misc
 .DS_Store
 *.pem
+
+local.settings.json
