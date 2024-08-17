@@ -56,6 +56,11 @@ module.exports = async function (context, req) {
     context.res = {
       status: 200,
       body: JSON.stringify(result.recordsets),
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
     };
   } catch (err) {
     console.error("SQL error", err);
