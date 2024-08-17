@@ -1,6 +1,20 @@
 module.exports = async function (context, req) {
   const sql = require("mssql");
 
+  // Handle preflight OPTIONS request
+  if (req.method === "OPTIONS") {
+    context.res = {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      },
+      status: 204,
+      body: "",
+    };
+    return;
+  }
+
   const config = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -21,6 +35,9 @@ module.exports = async function (context, req) {
   // Check if the procedure is allowed
   if (!allowedProcedures.includes(data.procedure)) {
     context.res = {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
       status: 400,
       body: JSON.stringify({ error: "Invalid procedure name." }),
     };
@@ -38,6 +55,9 @@ module.exports = async function (context, req) {
 
   if (!isValid) {
     context.res = {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
       status: 400,
       body: JSON.stringify({ error: "Invalid parameters." }),
     };
@@ -54,17 +74,18 @@ module.exports = async function (context, req) {
 
     console.log("Query executed successfully:", result);
     context.res = {
-      status: 200,
-      body: JSON.stringify(result.recordsets),
       headers: {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
+      status: 200,
+      body: JSON.stringify(result.recordsets),
     };
   } catch (err) {
     console.error("SQL error", err);
     context.res = {
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+      },
       status: 500,
       body: JSON.stringify({ error: "Server Error" }),
     };
