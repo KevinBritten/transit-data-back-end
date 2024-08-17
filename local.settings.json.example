@@ -1,0 +1,14 @@
+{
+    "IsEncrypted": false,
+    "Values": {
+      "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+      "FUNCTIONS_WORKER_RUNTIME": "node",
+      "DB_USER": "yourUsername",
+      "DB_PASSWORD": "yourPassword",
+      "DB_SERVER": "yourServer",
+      "DB_DATABASE": "yourDatabase",
+      "DB_PORT": "1433",
+      "DB_ENCRYPT": "true",
+      "DB_TRUST_CERTIFICATE": "true"
+    }
+  }
