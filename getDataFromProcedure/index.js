@@ -25,7 +25,7 @@ module.exports = async function (context, req) {
       encrypt: process.env.DB_TRUST_CERTIFICATE === "true", // Logically check for string 'true'
       trustServerCertificate: process.env.DB_ENCRYPT === "true", // Logically check for string 'true'
     },
-    requestTimeout: 60000,
+    requestTimeout: 600000,
   };
 
   const allowedProcedures = [
