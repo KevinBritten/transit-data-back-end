@@ -28,7 +28,15 @@ module.exports = async function (context, req) {
     requestTimeout: 60000,
   };
 
-  const allowedProcedures = ["MidTermTraffic", "SignupUser"];
+  const allowedProcedures = [
+    "LongTermRevenueSummary",
+    "LongTermTrafficProc",
+    "MidTermRevenueSummary",
+    "MidTermTraffic",
+    "RevenueDetailsFareProducts",
+    "RevenueDetailsPOS",
+    "ShortTermTrafficProc",
+  ];
 
   let data = req.body; // Use real data in production
 
