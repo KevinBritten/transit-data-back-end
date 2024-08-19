@@ -42,6 +42,8 @@ module.exports = async function (context, req) {
       .output("status", sql.Int)
       .output("message", sql.VarChar)
       .output("accessToken", sql.VarChar)
+      .output("expirationDateTime", sql.DateTime)
+
       .execute("LoginUser");
 
     console.log("Query executed successfully:", result);
@@ -50,7 +52,8 @@ module.exports = async function (context, req) {
         "Access-Control-Allow-Origin": "*",
       },
       status: 200,
-      body: ({ result, status, accessToken } = result.output),
+      body: ({ result, status, accessToken, expirationDateTime } =
+        result.output),
     };
   } catch (err) {
     console.error("SQL error", err);
