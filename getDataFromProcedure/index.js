@@ -1,11 +1,17 @@
 module.exports = async function (context, req) {
   const sql = require("mssql");
 
+  const origin = req.headers.origin;
+  const headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+  };
+
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
     context.res = {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        ...headers,
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
@@ -14,6 +20,14 @@ module.exports = async function (context, req) {
     };
     return;
   }
+
+  function getTokenFromHeaders(req) {
+    const cookieHeader = req.headers.cookie || "";
+    const tokenMatch = cookieHeader.match(/accessToken=([^;]+)/);
+    return tokenMatch ? tokenMatch[1] : null;
+  }
+
+  const accessToken = getTokenFromHeaders(req);
 
   const config = {
     user: process.env.DB_USER,
@@ -43,9 +57,7 @@ module.exports = async function (context, req) {
   // Check if the procedure is allowed
   if (!allowedProcedures.includes(data.procedure)) {
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 400,
       body: JSON.stringify({ error: "Invalid procedure name." }),
     };
@@ -63,9 +75,7 @@ module.exports = async function (context, req) {
 
   if (!isValid) {
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 400,
       body: JSON.stringify({ error: "Invalid parameters." }),
     };
@@ -77,23 +87,39 @@ module.exports = async function (context, req) {
     let pool = await sql.connect(config);
     console.log("Connected to the database successfully.");
 
+    let result = await pool
+      .request()
+      .input("accessToken", sql.VarChar, accessToken)
+      .output("status", sql.Int)
+      .output("message", sql.VarChar)
+      .execute("checkToken");
+
+    const { status, message } = result.output;
+
+    if (status != 200) {
+      console.error("Invalid access token", message);
+      context.res = {
+        headers,
+        status: 401,
+        body: JSON.stringify({ error: "Invalid access token" }),
+      };
+      return;
+    }
+
     let request = pool.request();
-    let result = await getResult(data, request);
+
+    result = await getResult(data, request);
 
     console.log("Query executed successfully:", result);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 200,
       body: JSON.stringify(result.recordsets),
     };
   } catch (err) {
     console.error("SQL error", err);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 500,
       body: JSON.stringify({ error: "Server Error" }),
     };
