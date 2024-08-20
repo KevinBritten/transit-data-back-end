@@ -1,11 +1,18 @@
 module.exports = async function (context, req) {
   const sql = require("mssql");
+  const origin = req.headers.origin;
+  console.log(origin);
+
+  const headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+  };
 
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
     context.res = {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        ...headers,
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
@@ -28,7 +35,7 @@ module.exports = async function (context, req) {
     requestTimeout: 600000,
   };
 
-  let data = req.body; // Use real data in production
+  let data = req.body;
 
   try {
     console.log("Attempting to connect to the database...");
@@ -43,24 +50,29 @@ module.exports = async function (context, req) {
       .output("message", sql.VarChar)
       .output("accessToken", sql.VarChar)
       .output("expirationDateTime", sql.DateTime)
-
       .execute("LoginUser");
+
+    const { status, message, accessToken, expirationDateTime } = result.output;
+
+    const cookieOptions = [
+      `accessToken=${accessToken}`, // The cookie value
+      `HttpOnly`, // Make the cookie inaccessible via JavaScript
+      `Secure`, // Ensure the cookie is only sent over HTTPS
+      `SameSite=None`, // Protect against CSRF
+      `Path=/`, // The path the cookie is valid for
+      `Expires=${new Date(expirationDateTime).toUTCString()}`, // Set expiration date
+    ];
 
     console.log("Query executed successfully:", result);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers: { ...headers, "Set-Cookie": cookieOptions.join("; ") },
       status: 200,
-      body: ({ result, status, accessToken, expirationDateTime } =
-        result.output),
+      body: { status, message },
     };
   } catch (err) {
     console.error("SQL error", err);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 500,
       body: JSON.stringify({ error: "Server Error" }),
     };

@@ -1,11 +1,17 @@
 module.exports = async function (context, req) {
   const sql = require("mssql");
+  const origin = req.headers.origin;
+
+  const headers = {
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Credentials": "true",
+  };
 
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
     context.res = {
       headers: {
-        "Access-Control-Allow-Origin": "*",
+        ...headers,
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
       },
@@ -14,6 +20,14 @@ module.exports = async function (context, req) {
     };
     return;
   }
+
+  function getTokenFromHeaders(req) {
+    const cookieHeader = req.headers.cookie || "";
+    const tokenMatch = cookieHeader.match(/accessToken=([^;]+)/);
+    return tokenMatch ? tokenMatch[1] : null;
+  }
+
+  const accessToken = getTokenFromHeaders(req);
 
   const config = {
     user: process.env.DB_USER,
@@ -28,8 +42,6 @@ module.exports = async function (context, req) {
     requestTimeout: 600000,
   };
 
-  let data = req.body; // Use real data in production
-
   try {
     console.log("Attempting to connect to the database...");
     let pool = await sql.connect(config);
@@ -37,7 +49,7 @@ module.exports = async function (context, req) {
 
     let result = await pool
       .request()
-      .input("accessToken", sql.VarChar, data.accessToken)
+      .input("accessToken", sql.VarChar, accessToken)
       .output("status", sql.Int)
       .output("message", sql.VarChar)
       .execute("checkToken");
@@ -46,9 +58,7 @@ module.exports = async function (context, req) {
 
     console.log("Query executed successfully:", result);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 200,
       body: {
         message: result.output.message,
@@ -59,9 +69,7 @@ module.exports = async function (context, req) {
   } catch (err) {
     console.error("SQL error", err);
     context.res = {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-      },
+      headers,
       status: 500,
       body: JSON.stringify({ error: "Server Error" }),
     };
