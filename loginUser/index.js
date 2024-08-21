@@ -1,7 +1,6 @@
 module.exports = async function (context, req) {
   const sql = require("mssql");
   const origin = req.headers.origin;
-  console.log(origin);
 
   const headers = {
     "Access-Control-Allow-Origin": origin,

@@ -54,7 +54,17 @@ module.exports = async function (context, req) {
       .output("message", sql.VarChar)
       .execute("checkToken");
 
-    console.log(result.recordset[0]);
+    const { status, message } = result.output;
+
+    if (status != 200) {
+      console.error("Invalid access token", message);
+      context.res = {
+        headers,
+        status: 401,
+        body: JSON.stringify({ error: "Invalid access token" }),
+      };
+      return;
+    }
 
     console.log("Query executed successfully:", result);
     context.res = {
